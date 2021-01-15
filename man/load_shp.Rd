@@ -4,10 +4,12 @@
 \alias{load_shp}
 \title{Loading the shape files}
 \usage{
-load_shp(zip_dim)
+load_shp(zip_dim, quality = "high")
 }
 \arguments{
 \item{zip_dim}{integer if zip code dimension has 1, 2, 3 or 5 digits}
+
+\item{quality}{character string either "high" (default) or "low"}
 }
 \value{
 tibble with geo location, population and zip code
