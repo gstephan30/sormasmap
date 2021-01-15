@@ -1,0 +1,110 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+# sormasmap
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+`sormasmap` is an R package with the goal to visualize the current spread of the [SORMAS app](http://www.sormas.org) within Germany. The package is primarily used for generating and embedding `leaflet` and `ggplot` graphs. Contributions highly welcome.
+
+## Installation
+
+You can install the released version of sormasmap with:
+
+``` r
+devtools::install_github("gstephan/sormasmap")
+```
+
+## Geo code and zip code of all German Gesundheitsaemter
+
+One of the primary key features is an overview of all German Gesundheitsaemter. The data is generated from the [RKI PLZ Tool](https://tools.rki.de/plztool/) with its [data source](https://www.rki.de/DE/Content/Infekt/IfSG/Software/software_node.html). This data has all German Gesundheitsaemter in it with all associated ZIP codes. Data is exctracted from the xml file.
+
+Attached to this data are the geo locations with its longitude and latitude for visualization purposes. The geo location is received via the `ggmap` interface to google maps. Package documentation for the setup can be seen [here](https://github.com/dkahle/ggmap).
+
+The data is nested, implicating that some google maps data variables and RKI PLZ tool variables are nested and they can be explored via the e.g. `tidyr`s `unnest()` functions.
+
+```{r example}
+library(sormasmap)
+gesundheitsaemter
+```
+
+As an example, you are interested in one region, here the Thuringian city Eisenach. Select important variables:
+
+```{r select}
+library(dplyr)
+library(tidyr)
+
+gesus <- gesundheitsaemter %>% 
+  select(name, postalcode, plz_rki, gemeinden, long, lat) 
+gesus
+
+```
+
+Subset your data:
+
+```{r subset}
+eisenach_gesu <- gesus %>% 
+  unnest(gemeinden) %>% 
+  filter(grepl("Eisenach", gemeinden))
+eisenach_gesu
+```
+
+Unnest all possilbe Zip code ranges of the Gesundheitsamt that the city Eisenach is associated with:
+
+```{r print}
+eisenach_gesu %>% 
+  filter(grepl("Wartburgkreis", name)) %>% 
+  unnest(plz_rki) %>% 
+  print(n = 30)
+```
+
+This information prepares the visualization.
+
+## Map of all German Gesundheitsaemter
+
+```{r setup}
+library(ggplot2)
+library(raster)
+```
+
+Get German Bundesland map data
+
+```{r eval=FALSE}
+germany <- getData(country = "Germany", level = 1)
+```
+
+```{r echo=FALSE}
+raster_file <- system.file("extdata", "gadm36_DEU_1_sp.rds", package = "sormasmap")
+germany <- readRDS(raster_file)
+```
+
+Plot the data:
+
+```{r map}
+gesundheitsaemter %>%
+  ggplot(aes(long, lat)) +
+  geom_polygon(
+    data = germany,
+    aes(long, lat, group = group),
+    colour = "white",
+    fill = "#add8e6") +
+  geom_point() +
+  coord_map() +
+  theme_void() +
+  labs(title = "German Gesundheitsaemter")
+```
+
